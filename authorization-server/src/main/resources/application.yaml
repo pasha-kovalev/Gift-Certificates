@@ -1,0 +1,52 @@
+spring:
+  profiles:
+    active: prod
+server:
+  jwt:
+    token:
+      signing-key: ${JWT_SIGNING_KEY}
+      verifier-key: ${JWT_VERIFIER_KEY}
+  port: ${APP_PORT}
+logging:
+  level:
+    org.springframework.security: TRACE
+security:
+  oauth2:
+    client:
+      client-id: postman
+      client-secret: ${OAUTH_CLIENT_SECRET}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: postgresql
+    show-sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gift_app
+    username: postgres
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 80
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  jpa:
+    show-sql: true
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto:
+    defer-datasource-initialization: true
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver

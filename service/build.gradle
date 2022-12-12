@@ -1,0 +1,48 @@
+plugins {
+    id 'java-library'
+    id "io.freefair.lombok" version "6.4.3"
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'jacoco'
+}
+
+group 'com.epam.esm'
+version '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api project(':dao')
+
+    implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.security.oauth:spring-security-oauth2:2.3.4.RELEASE'
+    compileOnly 'org.hibernate.orm:hibernate-envers:6.1.1.Final'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.mapstruct:mapstruct:1.4.2.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.4.2.Final'
+
+    testImplementation 'org.springframework.security:spring-security-test:5.5.1'
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+
+    testImplementation 'org.mockito:mockito-inline:4.3.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+
+}
+
+test {
+    useJUnitPlatform()
+}
+
+compileJava {
+    options.compilerArgs << "-Amapstruct.defaultComponentModel=spring"
+}
+
+bootJar {
+    enabled = false
+}

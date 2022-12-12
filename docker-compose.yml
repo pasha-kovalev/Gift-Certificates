@@ -1,0 +1,45 @@
+version: '2'
+
+services:
+  app:
+    image: 'controller_app:${DOCKER_APP_TAG_ENV}'
+    ports:
+      - "${DOCKER_APP_PORT_ENV}:${DOCKER_APP_PORT_ENV}"
+    build:
+      context: ./controller
+    container_name: "app-${DOCKER_CONTAINER_NAME_PREFIX_ENV}"
+    environment:
+      - APP_PORT=${DOCKER_APP_PORT_ENV}
+      - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
+      - AUTH_APP_PORT=${DOCKER_AUTH_APP_PORT_ENV}
+      - AUTH_APP_URL=http://authorization-app-${DOCKER_CONTAINER_NAME_PREFIX_ENV}:${DOCKER_AUTH_APP_PORT_ENV}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/compose-postgres
+      - SPRING_DATASOURCE_USERNAME=compose-postgres
+      - SPRING_DATASOURCE_PASSWORD=compose-postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    networks:
+      - postgresql-network
+
+  authorization-app:
+    image: 'authorization-app:${DOCKER_APP_TAG_ENV}'
+    ports:
+      - "${DOCKER_AUTH_APP_PORT_ENV}:${DOCKER_AUTH_APP_PORT_ENV}"
+    build:
+      context: ./authorization-server
+    container_name: "authorization-app-${DOCKER_CONTAINER_NAME_PREFIX_ENV}"
+    environment:
+      - APP_PORT=${DOCKER_AUTH_APP_PORT_ENV}
+      - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
+      - JWT_SIGNING_KEY=${JWT_SIGNING_KEY}
+      - JWT_VERIFIER_KEY=${JWT_VERIFIER_KEY}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/compose-postgres
+      - SPRING_DATASOURCE_USERNAME=compose-postgres
+      - SPRING_DATASOURCE_PASSWORD=compose-postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - REDIRECT_URI=http://app-${DOCKER_CONTAINER_NAME_PREFIX_ENV}:${DOCKER_APP_PORT_ENV}
+    networks:
+      - postgresql-network
+
+networks:
+  postgresql-network:
+    external: true

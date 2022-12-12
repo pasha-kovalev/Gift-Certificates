@@ -1,0 +1,12 @@
+pluginManagement {
+    plugins {
+        id 'org.springframework.boot' version "2.6.7"
+    }
+}
+
+rootProject.name = 'app'
+include 'dao'
+include 'service'
+include 'controller'
+include 'authorization-server'
+

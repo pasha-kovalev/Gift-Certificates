@@ -1,0 +1,70 @@
+plugins {
+    id 'org.springframework.boot'
+    id "org.sonarqube" version "2.8"
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+    id 'jacoco'
+    id "com.avast.gradle.docker-compose" version "0.16.8"
+}
+
+group = 'com.epam.esm'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dockerCompose {
+    environment.put 'DOCKER_APP_TAG_ENV', version
+}
+
+composeBuild.dependsOn 'bootJar'
+
+sonarqube {
+    properties {
+        property "sonar.sourceEncoding", "UTF-8"
+        property "sonar.binaries", "**/build/classes"
+        property "sonar.java.binaries", "**/build/classes/java/main"
+        property "sonar.java.test.binaries", "**/build/classes/java/test"
+        property "sonar.java.coveragePlugin", "jacoco"
+        property "sonar.core.codeCoveragePlugin", "jacoco"
+        property "sonar.exclusions", "**/*Generated.java, **/generated"
+        property "sonar.coverage.exclusions", "**src/test/**, **authorization-server/**,**/*Config*,**/*Oauth*"
+        property "sonar.cpd.exclusions", "**src/test/**"
+        property "sonar.coverage.jacoco.xmlReportPaths", "../build/reports/jacoco/codeCoverageReport/codeCoverageReport.xml"
+        property "sonar.qualitygate.wait", "true"
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    }
+}
+
+tasks.register("codeCoverageReport", JacocoReport) {
+    subprojects { subproject ->
+        subproject.plugins.withType(JacocoPlugin).configureEach {
+            subproject.tasks.matching({ t -> t.extensions.findByType(JacocoTaskExtension) }).configureEach { testTask ->
+                sourceSets subproject.sourceSets.main
+                executionData(testTask)
+            }
+
+            subproject.tasks.matching({ t -> t.extensions.findByType(JacocoTaskExtension) }).forEach {
+                rootProject.tasks.codeCoverageReport.dependsOn(it)
+            }
+        }
+    }
+
+    reports {
+        xml.enabled true
+        html.enabled true
+    }
+}
+
+bootJar {
+    enabled = false
+}

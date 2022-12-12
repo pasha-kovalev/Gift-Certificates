@@ -1,0 +1,55 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: test
+    image: gradle:7.4.1-jdk17-alpine
+    environment:
+      OAUTH_CLIENT_SECRET:
+        from_secret: OAUTH_CLIENT_SECRET
+    commands:
+      - gradle clean codeCoverageReport
+
+  - name: sonar
+    image: gradle:7.4.1-jdk17-alpine
+    environment:
+      SONAR_TOKEN:
+        from_secret: SONAR_TOKEN
+    commands:
+      - >
+        gradle sonarqube
+        -Dsonar.host.url=http://host.docker.internal:9000
+        -Dsonar.login=$$SONAR_TOKEN
+        -Dsonar.projectKey=sonar-drone
+        -Dsonar.projectName=sonar-drone
+
+  - name: package
+    image: gradle:7.4.1-jdk17-alpine
+    commands:
+      - gradle bootJar
+
+  - name: deploy
+    image: docker/compose
+    environment:
+      JWT_SIGNING_KEY:
+        from_secret: JWT_SIGNING_KEY
+      JWT_VERIFIER_KEY:
+        from_secret: JWT_VERIFIER_KEY
+      OAUTH_CLIENT_SECRET:
+        from_secret: OAUTH_CLIENT_SECRET
+      DOCKER_APP_TAG_ENV: 0.0.1-SNAPSHOT
+      DOCKER_APP_PORT_ENV: 8082
+      DOCKER_AUTH_APP_PORT_ENV: 9003
+      DOCKER_CONTAINER_NAME_PREFIX_ENV: drone
+      DOCKER_DRIVER: overlay2
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+    commands:
+      - docker-compose build
+      - docker-compose up -d
+volumes:
+  - name: docker_sock
+    host:
+      path: /var/run/docker.sock

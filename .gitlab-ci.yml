@@ -1,0 +1,50 @@
+stages:
+  - test
+  - build
+  - deploy
+
+before_script:
+  - export GRADLE_USER_HOME=cache/.gradle
+  - chmod +x ./gradlew
+
+cache:
+  paths:
+    - $GRADLE_USER_HOME/wrapper
+    - $GRADLE_USER_HOME/caches
+
+test-app:
+  stage: test
+  script:
+    - ./gradlew -g /cache clean test
+
+sonarqube-check:
+  stage: test
+  script:
+    - ./gradlew -g /cache codeCoverageReport sonarqube
+
+package-app:
+  stage: build
+  artifacts:
+    paths:
+      - ./**/build/libs/*.jar
+    expire_in: 1 hour
+  script:
+    - ./gradlew -g /cache bootJar
+
+deploy-app:
+  image:
+    name: docker/compose:latest
+  services:
+    - docker:dind
+  dependencies:
+    - package-app
+  variables:
+    DOCKER_CONTAINER_NAME_PREFIX_ENV: gitlab-ci
+    DOCKER_APP_PORT_ENV: 55555
+    DOCKER_AUTH_APP_PORT_ENV: 55556
+    DOCKER_APP_TAG_ENV: 0.0.1-SNAPSHOT
+    DOCKER_DRIVER: overlay2
+  stage: deploy
+  script:
+    - docker-compose build
+    - docker-compose up -d
